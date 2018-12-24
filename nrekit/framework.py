@@ -238,7 +238,9 @@ class re_framework:
         print("Testing...")
         if self.sess == None:
             self.sess = tf.Session()
-        model = model(self.test_data_loader, self.test_data_loader.batch_size, self.test_data_loader.max_length)
+        if not hasattr(self, 'test_model'):
+            self.test_model = model(self.test_data_loader, self.test_data_loader.batch_size, self.test_data_loader.max_length)
+        model = self.test_model
         if not ckpt is None:
             saver = tf.train.Saver()
             saver.restore(self.sess, ckpt)
