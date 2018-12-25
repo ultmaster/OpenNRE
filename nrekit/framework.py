@@ -68,8 +68,9 @@ class re_framework:
     MODE_BAG = 0 # Train and test the model at bag level.
     MODE_INS = 1 # Train and test the model at instance level
 
-    def __init__(self, train_data_loader, test_data_loader, max_length=120, batch_size=160):
+    def __init__(self, train_data_loader, val_data_loader, test_data_loader, max_length=120, batch_size=160):
         self.train_data_loader = train_data_loader
+        self.val_data_loader = val_data_loader
         self.test_data_loader = test_data_loader
         self.sess = None
 
@@ -150,6 +151,7 @@ class re_framework:
         train_logit = tf.concat(train_logit_collection, 0)
 
         grads = average_gradients(tower_grads)
+        # grads = [(tf.clip_by_norm(grad, 1), var) if grad is not None else (grad, var) for grad, var in grads]
         train_op = optimizer.apply_gradients(grads)
         summary_writer = tf.summary.FileWriter(summary_dir, self.sess.graph)
 
@@ -238,8 +240,11 @@ class re_framework:
         print("Testing...")
         if self.sess == None:
             self.sess = tf.Session()
+        eval_dataset = self.val_data_loader
+        if not ckpt is None:
+            eval_dataset = self.test_data_loader
         if not hasattr(self, 'test_model'):
-            self.test_model = model(self.test_data_loader, self.test_data_loader.batch_size, self.test_data_loader.max_length)
+            self.test_model = model(eval_dataset, eval_dataset.batch_size, eval_dataset.max_length)
         model = self.test_model
         if not ckpt is None:
             saver = tf.train.Saver()
@@ -252,7 +257,7 @@ class re_framework:
         test_result = []
         pred_result = []
          
-        for i, batch_data in enumerate(self.test_data_loader):
+        for i, batch_data in enumerate(eval_dataset):
             iter_logit = self.one_step(self.sess, model, batch_data, [model.test_logit()])[0]
             iter_output = iter_logit.argmax(-1)
             iter_correct = (iter_output == batch_data['rel']).sum()
@@ -265,7 +270,7 @@ class re_framework:
                 sys.stdout.write("[TEST] step %d | not NA accuracy: %f, accuracy: %f\r" % (i, float(tot_not_na_correct) / tot_not_na, float(tot_correct) / tot))
                 sys.stdout.flush()
             for idx in range(len(iter_logit)):
-                for rel in range(1, self.test_data_loader.rel_tot):
+                for rel in range(1, eval_dataset.rel_tot):
                     test_result.append({'score': iter_logit[idx][rel], 'flag': batch_data['multi_rel'][idx][rel]})
                     if batch_data['entpair'][idx] != "None#None":
                         pred_result.append({'score': float(iter_logit[idx][rel]), 'entpair': batch_data['entpair'][idx].encode('utf-8'), 'relation': rel})
@@ -277,7 +282,7 @@ class re_framework:
         for i, item in enumerate(sorted_test_result[::-1]):
             correct += item['flag']
             prec.append(float(correct) / (i + 1))
-            recall.append(float(correct) / self.test_data_loader.relfact_tot)
+            recall.append(float(correct) / eval_dataset.relfact_tot)
         auc = sklearn.metrics.auc(x=recall, y=prec)
         print("\n[TEST] auc: {}".format(auc))
         print("Finish testing")

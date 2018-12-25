@@ -17,13 +17,20 @@ train_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir
                                                         os.path.join(dataset_dir, 'rel2id.json'), 
                                                         mode=nrekit.data_loader.json_file_data_loader.MODE_RELFACT_BAG,
                                                         shuffle=True)
+
+val_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir, 'val.json'), 
+                                                       os.path.join(dataset_dir, 'word_vec.json'),
+                                                       os.path.join(dataset_dir, 'rel2id.json'), 
+                                                       mode=nrekit.data_loader.json_file_data_loader.MODE_ENTPAIR_BAG,
+                                                       shuffle=False)
+
 test_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir, 'test.json'), 
                                                        os.path.join(dataset_dir, 'word_vec.json'),
                                                        os.path.join(dataset_dir, 'rel2id.json'), 
                                                        mode=nrekit.data_loader.json_file_data_loader.MODE_ENTPAIR_BAG,
                                                        shuffle=False)
 
-framework = nrekit.framework.re_framework(train_loader, test_loader)
+framework = nrekit.framework.re_framework(train_loader, val_loader, test_loader)
 
 class model(nrekit.framework.re_model):
     encoder = "pcnn"
@@ -104,7 +111,7 @@ if len(sys.argv) > 4:
         use_rl = True
 
 if use_rl:
-    rl_framework = nrekit.rl.rl_re_framework(train_loader, test_loader)
+    rl_framework = nrekit.rl.rl_re_framework(train_loader, val_loader, test_loader)
     rl_framework.train(model, nrekit.rl.policy_agent, model_name=dataset_name + "_" + model.encoder + "_" + model.selector + "_rl", max_epoch=60, ckpt_dir="checkpoint")
 else:
-    framework.train(model, model_name=dataset_name + "_" + model.encoder + "_" + model.selector, max_epoch=60, ckpt_dir="checkpoint", gpu_nums=1)
+    framework.train(model, model_name=dataset_name + "_" + model.encoder + "_" + model.selector, max_epoch=60, ckpt_dir="checkpoint", gpu_nums=1, learning_rate=1)
