@@ -119,6 +119,7 @@ class re_framework:
               summary_dir='./summary',
               test_result_dir='./test_result',
               learning_rate=0.5,
+              weight_decay=0,
               max_epoch=60,
               pretrain_model=None,
               test_epoch=1,
@@ -131,7 +132,7 @@ class re_framework:
         # Init
         config = tf.ConfigProto(allow_soft_placement=True)
         self.sess = tf.Session(config=config)
-        optimizer = optimizer(learning_rate)
+        optimizer = optimizer(learning_rate, weight_decay-weight_decay)
         
         # Multi GPUs
         tower_grads = []

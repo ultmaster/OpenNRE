@@ -16,7 +16,7 @@ def __piecewise_pooling__(x, mask):
 
     # reduce dim from 3 * hidden_size to hidden_size
     x = tf.reshape(x, [-1, hidden_size * 3])
-    # x = tf.layers.dense(x, hidden_size, kernel_initializer=tf.contrib.layers.xavier_initializer(), reuse=tf.AUTO_REUSE)
+    # x = tf.layers.dense(x, hidden_size, kernel_initializer=tf.contrib.layers.xavier_initializer())
     return x
     # return tf.reshape(x, [-1, hidden_size])
 
