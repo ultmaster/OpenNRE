@@ -16,18 +16,21 @@ train_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir
                                                         os.path.join(dataset_dir, 'word_vec.json'),
                                                         os.path.join(dataset_dir, 'rel2id.json'), 
                                                         mode=nrekit.data_loader.json_file_data_loader.MODE_RELFACT_BAG,
+                                                        dataset_name=dataset_name,
                                                         shuffle=True)
 
 val_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir, 'val.json'), 
                                                        os.path.join(dataset_dir, 'word_vec.json'),
                                                        os.path.join(dataset_dir, 'rel2id.json'), 
                                                        mode=nrekit.data_loader.json_file_data_loader.MODE_ENTPAIR_BAG,
+                                                       dataset_name=dataset_name,
                                                        shuffle=False)
 
 test_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir, 'test.json'), 
                                                        os.path.join(dataset_dir, 'word_vec.json'),
                                                        os.path.join(dataset_dir, 'rel2id.json'), 
                                                        mode=nrekit.data_loader.json_file_data_loader.MODE_ENTPAIR_BAG,
+                                                       dataset_name=dataset_name,
                                                        shuffle=False)
 
 framework = nrekit.framework.re_framework(train_loader, val_loader, test_loader)
@@ -111,7 +114,25 @@ if len(sys.argv) > 4:
         use_rl = True
 
 if use_rl:
+    model_name=dataset_name + "_" + model.encoder + "_" + model.selector + "_rl"
     rl_framework = nrekit.rl.rl_re_framework(train_loader, val_loader, test_loader)
-    rl_framework.train(model, nrekit.rl.policy_agent, model_name=dataset_name + "_" + model.encoder + "_" + model.selector + "_rl", max_epoch=60, ckpt_dir="checkpoint")
+    rl_framework.train(model, nrekit.rl.policy_agent, model_name=model_name, max_epoch=60, ckpt_dir="checkpoint")
+    print("\n-------- TEST --------\n")
+    test_result_dir = './test_result'
+    rl_framework.test(model, ckpt="checkpoint/" + model_name)
+    if not os.path.isdir(test_result_dir):
+        os.mkdir(test_result_dir)
+    np.save(os.path.join(test_result_dir, model_name + "_x.npy"), best_recall)
+    np.save(os.path.join(test_result_dir, model_name + "_y.npy"), best_prec)
+
 else:
-    framework.train(model, model_name=dataset_name + "_" + model.encoder + "_" + model.selector, max_epoch=60, ckpt_dir="checkpoint", gpu_nums=1)
+    model_name = dataset_name + "_" + model.encoder + "_" + model.selector
+    framework.train(model, model_name=model_name, max_epoch=60, ckpt_dir="checkpoint", gpu_nums=1)
+    print("\n-------- TEST --------\n")
+    test_result_dir = './test_result'
+    framework.test(model, ckpt="checkpoint/" + model_name)
+    if not os.path.isdir(test_result_dir):
+        os.mkdir(test_result_dir)
+    np.save(os.path.join(test_result_dir, model_name + "_x.npy"), framework.cur_recall)
+    np.save(os.path.join(test_result_dir, model_name + "_y.npy"), framework.cur_prec)
+

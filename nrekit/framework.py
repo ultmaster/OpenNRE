@@ -132,7 +132,7 @@ class re_framework:
         # Init
         config = tf.ConfigProto(allow_soft_placement=True)
         self.sess = tf.Session(config=config)
-        optimizer = optimizer(learning_rate, weight_decay-weight_decay)
+        optimizer = optimizer(learning_rate)
         
         # Multi GPUs
         tower_grads = []
@@ -219,11 +219,11 @@ class re_framework:
         print("######")
         print("Finish training " + model_name)
         print("Best epoch auc = %f" % (best_metric))
-        if (not best_prec is None) and (not best_recall is None):
-            if not os.path.isdir(test_result_dir):
-                os.mkdir(test_result_dir)
-            np.save(os.path.join(test_result_dir, model_name + "_x.npy"), best_recall)
-            np.save(os.path.join(test_result_dir, model_name + "_y.npy"), best_prec)
+        # if (not best_prec is None) and (not best_recall is None):
+        #     if not os.path.isdir(test_result_dir):
+        #         os.mkdir(test_result_dir)
+        #     np.save(os.path.join(test_result_dir, model_name + "_x.npy"), best_recall)
+        #     np.save(os.path.join(test_result_dir, model_name + "_y.npy"), best_prec)
 
     def test(self,
              model,
@@ -272,7 +272,7 @@ class re_framework:
                 sys.stdout.flush()
             for idx in range(len(iter_logit)):
                 for rel in range(1, eval_dataset.rel_tot):
-                    test_result.append({'score': iter_logit[idx][rel], 'flag': batch_data['multi_rel'][idx][rel]})
+                    test_result.append({'score': iter_logit[idx][rel], 'flag': batch_data['multi_rel'][idx][rel], 'entpair': batch_data['entpair'][idx].encode('utf-8'), 'relation': eval_dataset.id2rel[rel]})
                     if batch_data['entpair'][idx] != "None#None":
                         pred_result.append({'score': float(iter_logit[idx][rel]), 'entpair': batch_data['entpair'][idx].encode('utf-8'), 'relation': rel})
                 entpair_tot += 1 

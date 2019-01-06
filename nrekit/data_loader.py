@@ -141,7 +141,7 @@ class json_file_data_loader(file_data_loader):
     def _load_preprocessed_file(self):
         name_prefix = '.'.join(self.file_name.split('/')[-1].split('.')[:-1])
         word_vec_name_prefix = '.'.join(self.word_vec_file_name.split('/')[-1].split('.')[:-1])
-        processed_data_dir = '_processed_data'
+        processed_data_dir = '_processed_data/' + self.dataset_name
         if not os.path.isdir(processed_data_dir):
             return False
         word_npy_file_name = os.path.join(processed_data_dir, name_prefix + '_word.npy')
@@ -182,7 +182,7 @@ class json_file_data_loader(file_data_loader):
         print("Finish loading")
         return True
 
-    def __init__(self, file_name, word_vec_file_name, rel2id_file_name, mode, shuffle=True, max_length=120, case_sensitive=False, reprocess=False, batch_size=160):
+    def __init__(self, file_name, word_vec_file_name, rel2id_file_name, mode, dataset_name, shuffle=True, max_length=120, case_sensitive=False, reprocess=False, batch_size=160):
         '''
         file_name: Json file storing the data in the following format
             [
@@ -223,6 +223,10 @@ class json_file_data_loader(file_data_loader):
         self.shuffle = shuffle
         self.batch_size = batch_size
         self.rel2id = json.load(open(rel2id_file_name))
+        self.id2rel = {}
+        self.dataset_name = dataset_name
+        for rel in self.rel2id:
+            self.id2rel[self.rel2id[rel]] = rel
 
         if reprocess or not self._load_preprocessed_file(): # Try to load pre-processed files:
             # Check files
@@ -384,7 +388,9 @@ class json_file_data_loader(file_data_loader):
             print("Storing processed files...")
             name_prefix = '.'.join(file_name.split('/')[-1].split('.')[:-1])
             word_vec_name_prefix = '.'.join(word_vec_file_name.split('/')[-1].split('.')[:-1])
-            processed_data_dir = '_processed_data'
+            processed_data_dir = '_processed_data/' + self.dataset_name
+            if not os.path.isdir('_processed_data'):
+                os.mkdir('_processed_data')
             if not os.path.isdir(processed_data_dir):
                 os.mkdir(processed_data_dir)
             np.save(os.path.join(processed_data_dir, name_prefix + '_word.npy'), self.data_word)
