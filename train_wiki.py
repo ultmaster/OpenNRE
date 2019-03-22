@@ -4,7 +4,7 @@ import tensorflow as tf
 import sys
 import os
 
-dataset_name = 'nyt'
+dataset_name = 'wiki'
 if len(sys.argv) > 1:
     dataset_name = sys.argv[1]
 dataset_dir = os.path.join('./data', dataset_name)
@@ -19,7 +19,7 @@ train_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir
                                                         dataset_name=dataset_name,
                                                         shuffle=True)
 
-val_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir, 'val.json'), 
+val_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir, 'test.json'), 
                                                        os.path.join(dataset_dir, 'word_vec.json'),
                                                        os.path.join(dataset_dir, 'rel2id.json'), 
                                                        mode=nrekit.data_loader.json_file_data_loader.MODE_ENTPAIR_BAG,
