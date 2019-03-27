@@ -4,7 +4,7 @@ import tensorflow as tf
 import sys
 import os
 
-dataset_name = 'wiki'
+dataset_name = 'wiki18'
 if len(sys.argv) > 1:
     dataset_name = sys.argv[1]
 dataset_dir = os.path.join('./data', dataset_name)
@@ -38,51 +38,65 @@ framework = nrekit.framework.re_framework(train_loader, val_loader, test_loader)
 class model(nrekit.framework.re_model):
     encoder = "pcnn"
     selector = "att"
+    adv = False
 
+    def get_model(self, x):
+        with tf.variable_scope(encoder + '_' + selector, reuse=tf.AUTO_REUSE):
+            # Encoder
+            if model.encoder == "pcnn":
+                x_train = nrekit.network.encoder.pcnn(x, self.mask, keep_prob=0.5)
+                x_test = nrekit.network.encoder.pcnn(x, self.mask, keep_prob=1.0)
+            elif model.encoder == "cnn":
+                x_train = nrekit.network.encoder.cnn(x, keep_prob=0.5)
+                x_test = nrekit.network.encoder.cnn(x, keep_prob=1.0)
+            elif model.encoder == "rnn":
+                x_train = nrekit.network.encoder.rnn(x, self.length, keep_prob=0.5)
+                x_test = nrekit.network.encoder.rnn(x, self.length, keep_prob=1.0)
+            elif model.encoder == "birnn":
+                x_train = nrekit.network.encoder.birnn(x, self.length, keep_prob=0.5)
+                x_test = nrekit.network.encoder.birnn(x, self.length, keep_prob=1.0)
+            else:
+                raise NotImplementedError
+
+            # Selector
+            if model.selector == "att":
+                self._train_logit, train_repre = nrekit.network.selector.bag_attention(x_train, self.scope, self.ins_label, self.rel_tot, True, keep_prob=0.5)
+                self._test_logit, test_repre = nrekit.network.selector.bag_attention(x_test, self.scope, self.ins_label, self.rel_tot, False, keep_prob=1.0)
+            elif model.selector == "ave":
+                self._train_logit, train_repre = nrekit.network.selector.bag_average(x_train, self.scope, self.rel_tot, keep_prob=0.5)
+                self._test_logit, test_repre = nrekit.network.selector.bag_average(x_test, self.scope, self.rel_tot, keep_prob=1.0)
+                self._test_logit = tf.nn.softmax(self._test_logit)
+            elif model.selector == "one":
+                self._train_logit, train_repre = nrekit.network.selector.bag_one(x_train, self.scope, self.label, self.rel_tot, True, keep_prob=0.5)
+                self._test_logit, test_repre = nrekit.network.selector.bag_one(x_test, self.scope, self.label, self.rel_tot, False, keep_prob=1.0)
+                self._test_logit = tf.nn.softmax(self._test_logit)
+            elif model.selector == "cross_max":
+                self._train_logit, train_repre = nrekit.network.selector.bag_cross_max(x_train, self.scope, self.rel_tot, keep_prob=0.5)
+                self._test_logit, test_repre = nrekit.network.selector.bag_cross_max(x_test, self.scope, self.rel_tot, keep_prob=1.0)
+                self._test_logit = tf.nn.softmax(self._test_logit)
+            else:
+                raise NotImplementedError
+ 
     def __init__(self, train_data_loader, batch_size, max_length=120):
         nrekit.framework.re_model.__init__(self, train_data_loader, batch_size, max_length=max_length)
         self.mask = tf.placeholder(dtype=tf.int32, shape=[None, max_length], name="mask")
         
         # Embedding
-        x = nrekit.network.embedding.word_position_embedding(self.word, self.word_vec_mat, self.pos1, self.pos2)
+        w_embedding = nrekit.embedding.word_embedding(self.word, self.word_vec_mat)
+        p_embedding = nrekit.embedding.pos_embedding(self.pos1, self.pos2)
+        x = tf.concat([w_embedding, p_embedding], -1)
+        # x = nrekit.network.embedding.word_position_embedding(self.word, self.word_vec_mat, self.pos1, self.pos2)
 
-        # Encoder
-        if model.encoder == "pcnn":
-            x_train = nrekit.network.encoder.pcnn(x, self.mask, keep_prob=0.5)
-            x_test = nrekit.network.encoder.pcnn(x, self.mask, keep_prob=1.0)
-        elif model.encoder == "cnn":
-            x_train = nrekit.network.encoder.cnn(x, keep_prob=0.5)
-            x_test = nrekit.network.encoder.cnn(x, keep_prob=1.0)
-        elif model.encoder == "rnn":
-            x_train = nrekit.network.encoder.rnn(x, self.length, keep_prob=0.5)
-            x_test = nrekit.network.encoder.rnn(x, self.length, keep_prob=1.0)
-        elif model.encoder == "birnn":
-            x_train = nrekit.network.encoder.birnn(x, self.length, keep_prob=0.5)
-            x_test = nrekit.network.encoder.birnn(x, self.length, keep_prob=1.0)
-        else:
-            raise NotImplementedError
+        self.get_model(x)   
 
-        # Selector
-        if model.selector == "att":
-            self._train_logit, train_repre = nrekit.network.selector.bag_attention(x_train, self.scope, self.ins_label, self.rel_tot, True, keep_prob=0.5)
-            self._test_logit, test_repre = nrekit.network.selector.bag_attention(x_test, self.scope, self.ins_label, self.rel_tot, False, keep_prob=1.0)
-        elif model.selector == "ave":
-            self._train_logit, train_repre = nrekit.network.selector.bag_average(x_train, self.scope, self.rel_tot, keep_prob=0.5)
-            self._test_logit, test_repre = nrekit.network.selector.bag_average(x_test, self.scope, self.rel_tot, keep_prob=1.0)
-            self._test_logit = tf.nn.softmax(self._test_logit)
-        elif model.selector == "one":
-            self._train_logit, train_repre = nrekit.network.selector.bag_one(x_train, self.scope, self.label, self.rel_tot, True, keep_prob=0.5)
-            self._test_logit, test_repre = nrekit.network.selector.bag_one(x_test, self.scope, self.label, self.rel_tot, False, keep_prob=1.0)
-            self._test_logit = tf.nn.softmax(self._test_logit)
-        elif model.selector == "cross_max":
-            self._train_logit, train_repre = nrekit.network.selector.bag_cross_max(x_train, self.scope, self.rel_tot, keep_prob=0.5)
-            self._test_logit, test_repre = nrekit.network.selector.bag_cross_max(x_test, self.scope, self.rel_tot, keep_prob=1.0)
-            self._test_logit = tf.nn.softmax(self._test_logit)
-        else:
-            raise NotImplementedError
-        
         # Classifier
         self._loss = nrekit.network.classifier.softmax_cross_entropy(self._train_logit, self.label, self.rel_tot, weights_table=self.get_weights())
+
+        if model.adv:
+            new_w_embedding = nrekit.network.adversarial(self._loss, w_embedding)
+            new_x = tf.concat([new_w_embedding, p_embedding], -1)
+            self.get_model(new_x)
+            self._loss = nrekit.network.classifier.softmax_cross_entropy(self._train_logit, self.label, self.rel_tot, weights_table=self.get_weights())
  
     def loss(self):
         return self._loss
@@ -112,6 +126,8 @@ if len(sys.argv) > 3:
 if len(sys.argv) > 4:
     if sys.argv[4] == 'rl':
         use_rl = True
+    if sys.argv[4] == 'adv':
+        model.adv = True
 
 if use_rl:
     model_name=dataset_name + "_" + model.encoder + "_" + model.selector + "_rl"
