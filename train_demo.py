@@ -111,4 +111,4 @@ if use_rl:
     rl_framework = nrekit.rl.rl_re_framework(train_loader, test_loader)
     rl_framework.train(model, nrekit.rl.policy_agent, model_name=dataset_name + "_" + model.encoder + "_" + model.selector + "_rl", max_epoch=60, ckpt_dir="checkpoint")
 else:
-    framework.train(model, model_name=dataset_name + "_" + model.encoder + "_" + model.selector, max_epoch=60, ckpt_dir="checkpoint", gpu_nums=1)
+    framework.train(model, model_name=dataset_name + "_" + model.encoder + "_" + model.selector, max_epoch=100, ckpt_dir="checkpoint", gpu_nums=1)
