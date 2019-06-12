@@ -41,7 +41,7 @@ def main():
     plt.ylim([min_y - 0.05, 1.05])
     plt.xlim([0.0, 0.4])
     plt.title('Precision-Recall')
-    plt.legend(loc="upper right")
+    plt.legend(loc="lower left")
     plt.grid(True)
     plt.savefig(os.path.join(result_dir, 'pr_curve'))
 
