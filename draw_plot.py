@@ -28,7 +28,7 @@ def main():
                 p_01 = max(p_01, prec)
             if recall >= 0.3:
                 p_03 = max(p_03, prec)
-            if recall <= 0.4:
+            if recall <= 0.4 and prec > 0:
                 min_y = min(min_y, prec)
 
         print(model + ' : ' + 'auc = ' + str(auc) + ' | ' + 'max F1 = ' + str(f1))
