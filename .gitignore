@@ -10,7 +10,6 @@ log_sbatch
 *.pyc
 *.swp
 *.tar
-*.sh
 sbatch*
 _*
 *.ipynb
