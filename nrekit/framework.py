@@ -105,6 +105,7 @@ class re_framework:
         self.train_data_loader = train_data_loader
         self.test_data_loader = test_data_loader
         self.sess = None # default graph session
+        self.test_model = None
 
     def one_step_multi_models(self, sess, models, batch_data_gen, run_array, return_label=True):
         """
@@ -346,7 +347,11 @@ class re_framework:
         print("Testing...")
         if self.sess == None:
             self.sess = tf.Session()
-        model = model(self.test_data_loader, self.test_data_loader.batch_size, self.test_data_loader.max_length)
+        if self.test_model is None:
+            model = model(self.test_data_loader, self.test_data_loader.batch_size, self.test_data_loader.max_length)
+            self.test_model = model
+        else:
+            model = self.test_model
         if not ckpt is None:
             saver = tf.train.Saver()
             saver.restore(self.sess, ckpt)

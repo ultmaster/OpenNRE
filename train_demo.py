@@ -16,12 +16,12 @@ train_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir
                                                         os.path.join(dataset_dir, 'word_vec.json'),
                                                         os.path.join(dataset_dir, 'rel2id.json'), 
                                                         mode=nrekit.data_loader.json_file_data_loader.MODE_RELFACT_BAG,
-                                                        shuffle=True)
+                                                        shuffle=True, batch_size=80)
 test_loader = nrekit.data_loader.json_file_data_loader(os.path.join(dataset_dir, 'test.json'), 
                                                        os.path.join(dataset_dir, 'word_vec.json'),
                                                        os.path.join(dataset_dir, 'rel2id.json'), 
                                                        mode=nrekit.data_loader.json_file_data_loader.MODE_ENTPAIR_BAG,
-                                                       shuffle=False)
+                                                       shuffle=False, batch_size=80)
 
 framework = nrekit.framework.re_framework(train_loader, test_loader)
 
@@ -35,7 +35,7 @@ class model(nrekit.framework.re_model):
         
         # Embedding
         with tf.name_scope('embedding'):
-            x = nrekit.network.embedding.word_position_embedding(self.word, self.word_vec_mat, self.pos1, self.pos2)
+            x = nrekit.network.embedding.word_position_embedding(self.word, self.word_vec_mat, self.pos1, self.pos2, word_embedding_dim=300)
 
         # Encoder
         with tf.name_scope('encoder'):
@@ -90,7 +90,7 @@ class model(nrekit.framework.re_model):
     def get_weights(self):
         with tf.variable_scope("weights_table", reuse=tf.AUTO_REUSE):
             print("Calculating weights_table...")
-            _weights_table = np.zeros((self.rel_tot), dtype=np.float32)
+            _weights_table = np.ones((self.rel_tot), dtype=np.float32)
             for i in range(len(self.train_data_loader.data_rel)):
                 _weights_table[self.train_data_loader.data_rel[i]] += 1.0 
             _weights_table = 1 / (_weights_table ** 0.05)
